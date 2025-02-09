@@ -2,6 +2,7 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
 import { signOut } from "aws-amplify/auth";
+import ServiceRequestForm from "./components/service-request/ServiceRequestForm";
 
 const client = generateClient<Schema>();
 
@@ -16,9 +17,11 @@ export default function TodoList() {
   };
 
   return (
-    <div>
-      <button onClick={createTodo}>Add new todo</button>
-      <button onClick={() => signOut()}>Sign out</button>
+    <div className="relative">
+      <button className="absolute top-0 right-10" onClick={() => signOut()}>
+        Sign Out
+      </button>
+      <ServiceRequestForm />
     </div>
   );
 }

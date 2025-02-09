@@ -7,9 +7,17 @@ import "@aws-amplify/ui-react/styles.css";
 import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
 import { Authenticator } from "@aws-amplify/ui-react";
+import { parseAmplifyConfig } from "aws-amplify/utils";
 
-Amplify.configure(outputs);
+const amplifyConfig = parseAmplifyConfig(outputs);
 
+Amplify.configure({
+  ...amplifyConfig,
+  API: {
+    ...amplifyConfig.API,
+    REST: outputs.custom.API,
+  },
+});
 const formFields = {
   signUp: {
     email: {

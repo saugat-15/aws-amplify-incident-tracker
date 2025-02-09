@@ -1,17 +1,40 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
+import { imageProcessor } from "./functions/imageProcessor/resource";
+import { configureApi } from "./config/api/imageApi";
+import { configureStorage } from "./config/s3/imageBucket";
+import { Stack } from "aws-cdk-lib";
 
-defineBackend({
+const backend = defineBackend({
   auth,
   data,
+  imageProcessor,
 });
 
-// const { cfnUserPool } = backend.auth.resources.cfnResources;
+// sanitising the branch name for use in the bucket naming
+const envName = process.env.AWS_BRANCH!.toLowerCase().replace(/_/g, "-").trim();
 
-// enabling advanced security mode
-// cfnUserPool.userPoolAddOns = {
-//   advancedSecurityMode: "AUDIT",
-// };
+const storageStack = backend.createStack(`public-storage-${envName}`);
+const apiStack = backend.createStack("api-stack");
 
-// cfnUserPool.enabledMfas = [...(cfnUserPool.enabledMfas || []), "EMAIL_OTP"];
+const imageApi = configureApi(backend, apiStack, envName);
+const imageBucket = configureStorage(backend, storageStack, envName);
+
+backend.addOutput({
+  custom: {
+    API: {
+      [imageApi.restApiName]: {
+        endpoint: imageApi.url,
+        region: Stack.of(imageApi).region,
+        apiName: imageApi.restApiName,
+      },
+    },
+    Storage: {
+      [imageBucket.bucketName]: {
+        bucketName: imageBucket.bucketName,
+        region: Stack.of(imageBucket).region,
+      },
+    },
+  },
+});
