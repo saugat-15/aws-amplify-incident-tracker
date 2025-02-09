@@ -39,11 +39,6 @@ export const configureStorage = (
         "s3:ListBucket",
       ],
       resources: [`${imageBucket.bucketArn}/public/*`, imageBucket.bucketArn],
-      conditions: {
-        StringEquals: {
-          "s3:prefix": "public/",
-        },
-      },
     })
   );
 

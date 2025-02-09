@@ -1,5 +1,5 @@
 {
-  "name": "amplify-vite-react-template",
+  "name": "service-request-incident-tracker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,11 +14,14 @@
     "@aws-amplify/ui-react": "^6.9.1",
     "@aws-lambda-powertools/logger": "^2.13.1",
     "@aws-sdk/client-s3": "^3.744.0",
+    "@hookform/resolvers": "^3.10.0",
     "@tailwindcss/vite": "^4.0.4",
     "aws-amplify": "^6.6.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tailwindcss": "^4.0.4"
+    "react-hook-form": "^7.54.2",
+    "tailwindcss": "^4.0.4",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.5.0",
