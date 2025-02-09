@@ -1,6 +1,8 @@
+@import "tailwindcss";
+
 body {
   margin: 0;
-  background: linear-gradient(180deg, rgb(117, 81, 194), rgb(255, 255, 255));
+  background: linear-gradient(180deg, rgb(71, 49, 118), rgb(163, 127, 127));
   display: flex;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   height: 100vh;
@@ -15,7 +17,7 @@ main {
   align-items: stretch;
 }
 
-button {
+/* button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -26,8 +28,8 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
   color: white;
-}
-button:hover {
+} */
+/* button:hover {
   border-color: #646cff;
 }
 button:focus,
@@ -62,4 +64,4 @@ li:hover {
 a {
   font-weight: 800;
   text-decoration: none;
-}
+} */

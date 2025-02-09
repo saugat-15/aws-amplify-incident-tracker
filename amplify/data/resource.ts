@@ -1,19 +1,9 @@
 import { a, defineData, type ClientSchema } from "@aws-amplify/backend";
+import { models } from "./models";
 
+// import all the models so that the files can be properly arranged and we are not lost in the code when we have multiple models
 const schema = a.schema({
-  ServiceRequest: a
-    .model({
-      id: a.id().required(), //uuid
-      serviceName: a.string(),
-      description: a.string(),
-      severity: a.enum(["LOW", "MEDIUM", "HIGH"]),
-      resolutionDate: a.datetime(),
-      reporterName: a.string(),
-      contactEmail: a.email(),
-      location: a.string(),
-      timestamp: a.timestamp(),
-    })
-    .authorization((allow) => [allow.groups(["USERS"])]),
+  ...models,
 });
 
 // exports the schema type to be used in the client
