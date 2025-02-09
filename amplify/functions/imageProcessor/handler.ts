@@ -1,169 +1,145 @@
 import {
   S3Client,
   PutObjectCommand,
-  GetObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
-// import { env } from "$amplify/env/";
 
+// Initialize logger
 const logger = new Logger({
   serviceName: "image-processor",
 });
 
+// S3 Client initialization
 const s3Client = new S3Client();
 
+// CORS headers for the response
 const headers = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Headers": "GET, POST",
   "Access-Control-Allow-Methods": "*",
 };
 
+enum ACTION {
+  UPLOAD = "UPLOAD",
+  LIST = "LIST",
+}
+
+// Lambda function handler
 export const handler: APIGatewayProxyHandler = async (event) => {
+  logger.info("Received request", { event });
+  const data =
+    event.httpMethod === "POST"
+      ? parseEventBody(event.body)
+      : event.queryStringParameters;
+
+  if (!data) {
+    return response(400, "Invalid input data.");
+  }
+
+  logger.info("Request data parsed", {
+    action: data.action,
+    fileName: data.fileName,
+  });
+
   try {
-    const data = JSON.parse(event?.body || "{}");
-    logger.info("Request data parsed", {
-      action: data.action,
-      fileName: data.fileName,
-    });
-
-    if (data.action === "upload") {
-      // Handle image upload
-      logger.info("Starting image upload", {
-        fileName: data.fileName,
-        imageData: data.imageData,
-      });
-      await _writeToS3(data.fileName, data.imageData);
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: "Image uploaded successfully" }),
-      };
-    } else {
-      // Handle image retrieval
-      const image = await _readFromS3();
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          message: "Image retrieved successfully",
-          data: image,
-        }),
-      };
+    switch (data.action) {
+      case ACTION.UPLOAD:
+        return await handleUpload(data);
+      case ACTION.LIST:
+        return await handleList();
+      default:
+        return response(400, "Invalid action specified.");
     }
-
-    // Add default return for unhandled actions
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({ message: "Invalid action" }),
-    };
   } catch (error) {
-    logger.error("Error processing request", {
-      error,
-    });
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ message: "Error processing request" }),
-    };
+    logger.error("Error processing request", { error });
+    return response(500, "Error processing request");
   }
 };
 
-async function _readFromS3(fileName?: string) {
-  const bucketName = process.env.BUCKET_NAME;
-
-  // If no fileName is provided, list all files in the public directory
-  if (!fileName) {
-    logger.info("Listing all files in bucket", {
-      bucketName,
-      prefix: "public/",
-      operation: "ListObjectsV2",
-    });
-
-    try {
-      const data = await s3Client.send(
-        new ListObjectsV2Command({
-          Bucket: bucketName,
-          Prefix: "public/",
-        })
-      );
-
-      logger.info("Successfully listed files from S3", {
-        bucketName,
-        fileCount: data.Contents?.length,
-      });
-
-      return (
-        data.Contents?.map((item) => ({
-          key: item.Key,
-          lastModified: item.LastModified,
-          size: item.Size,
-        })) || []
-      );
-    } catch (error) {
-      logger.error("Error listing files from S3", {
-        error,
-        bucketName,
-      });
-      throw error;
-    }
+// Helper function to parse event body
+const parseEventBody = (body: string | null) => {
+  const MAX_PAYLOAD_SIZE = 1048576; // 1 MB limit
+  if (body && Buffer.byteLength(body, "utf8") > MAX_PAYLOAD_SIZE) {
+    logger.error("Payload size too large");
+    return null;
   }
 
-  // If fileName is provided, fetch specific file
-  const key = `public/${fileName}`;
-
-  logger.info("Starting S3 read operation", {
-    bucketName,
-    key,
-    operation: "GetObject",
-  });
-
   try {
-    const data = await s3Client.send(
-      new GetObjectCommand({
+    logger.info("Parsing event body", { body });
+    return body ? JSON.parse(body) : null;
+  } catch (error) {
+    logger.error("Error parsing event body", { error });
+    return null;
+  }
+};
+
+// Function to send response
+const response = (statusCode: number, message: string, data: any = null) => ({
+  statusCode,
+  headers,
+  body: JSON.stringify({ message, data }),
+});
+
+// Handle image upload
+const handleUpload = async (data: {
+  action: string;
+  fileName: string;
+  imageData: string;
+}) => {
+  const { fileName, imageData } = data;
+  logger.info("Starting image upload", { fileName });
+
+  await writeToS3(fileName, imageData);
+
+  return response(200, "Image uploaded successfully");
+};
+
+// Handle listing images
+const handleList = async () => {
+  const data = await listS3Files();
+  return response(200, "Images listed successfully", data);
+};
+
+// List files in S3
+const listS3Files = async () => {
+  const bucketName = process.env.BUCKET_NAME!;
+  try {
+    logger.info("Listing all files in S3 bucket", { bucketName });
+    const { Contents } = await s3Client.send(
+      new ListObjectsV2Command({
         Bucket: bucketName,
-        Key: key,
+        Prefix: "public/",
       })
     );
-    // Convert stream to base64
-    const stream = data.Body as ReadableStream<Uint8Array>;
-    const chunks = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+
+    if (!Contents || Contents.length === 0) {
+      return [];
     }
-    const buffer = Buffer.concat(chunks);
 
-    logger.info("Successfully read file from S3", {
-      bucketName,
-      key,
+    const imageUrls = Contents.map(
+      (item) => `https://${bucketName}.s3.amazonaws.com/${item.Key}`
+    );
+    logger.info("Successfully listed files from S3", {
+      fileCount: Contents.length,
     });
-    return buffer.toString("base64");
+
+    return imageUrls;
   } catch (error) {
-    logger.error("Error reading from S3", {
-      error,
-      bucketName,
-      key,
-    });
-    throw error;
+    logger.error("Error listing files from S3", { error, bucketName });
+    throw new Error("Failed to list files from S3");
   }
-}
+};
 
-async function _writeToS3(fileName: string, imageData: string) {
+// Function to upload a file to S3
+const writeToS3 = async (fileName: string, imageData: string) => {
   const bucketName = process.env.BUCKET_NAME;
   const key = `public/${fileName}`;
-
-  logger.info("Starting S3 write operation", {
-    bucketName,
-    key,
-    operation: "PutObject",
-    contentType: "image/jpeg",
-  });
+  const buffer = Buffer.from(imageData, "base64");
 
   try {
-    // Convert base64 to buffer
-    const buffer = Buffer.from(imageData, "base64");
+    logger.info("Uploading file to S3", { bucketName, key });
     await s3Client.send(
       new PutObjectCommand({
         Bucket: bucketName,
@@ -173,16 +149,13 @@ async function _writeToS3(fileName: string, imageData: string) {
       })
     );
 
-    logger.info("Successfully wrote file to S3", {
-      bucketName,
-      key,
-    });
+    logger.info("Successfully uploaded file to S3", { bucketName, key });
   } catch (error) {
-    logger.error("Error writing to S3", {
+    logger.error("Error uploading file to S3", {
       error,
       bucketName,
       key,
     });
-    throw error;
+    throw new Error("Failed to upload file to S3");
   }
-}
+};

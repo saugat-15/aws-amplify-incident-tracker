@@ -8,6 +8,8 @@ import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { parseAmplifyConfig } from "aws-amplify/utils";
+import Header from "./components/Header.tsx";
+import { signOut } from "aws-amplify/auth";
 
 const amplifyConfig = parseAmplifyConfig(outputs);
 
@@ -43,6 +45,7 @@ const formFields = {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Authenticator formFields={formFields}>
+      <Header title="Service Request Incident Tracker" onSignOut={signOut} />
       <App />
     </Authenticator>
   </React.StrictMode>
