@@ -59,7 +59,7 @@ const SplashScreen = () => {
           progress > 20 ? "opacity-100" : "opacity-0"
         } transition-opacity duration-500`}
       >
-        <h1 className="text-4xl font-bold text-[#e3fcd6]">
+        <h1 className="text-lg md:text-4xl font-bold text-[#e3fcd6] text-center">
           Service Request Incident Tracker
         </h1>
         <h3 className="text-xl font-bold text-center text-[#A27B5C] mt-2">

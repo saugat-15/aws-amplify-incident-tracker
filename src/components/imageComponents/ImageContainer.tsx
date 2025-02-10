@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { get } from "aws-amplify/api";
 import { fetchAuthSession } from "aws-amplify/auth";
 import ListImages from "./ListImages";
@@ -25,7 +25,7 @@ const ImageContainer = () => {
       }
 
       const response = get({
-        apiName: "img-api",
+        apiName: `img-api-${import.meta.env.VITE_AWS_BRANCH}`,
         path: "img",
         options: {
           headers: {
@@ -55,6 +55,10 @@ const ImageContainer = () => {
   const handleUploadSuccess = () => {
     handleFetch(); // Refetch images after a successful upload
   };
+
+  useEffect(() => {
+    handleFetch();
+  }, []);
 
   return (
     <div className="p-4">

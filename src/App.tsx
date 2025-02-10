@@ -17,9 +17,10 @@ const router = createBrowserRouter([
     path: "/create",
     element: <ServiceRequestForm />,
   },
+  { path: "/images/upload", element: <ImageComponent /> },
   {
-    path: "/splash",
-    element: <SplashScreen />,
+    path: "/gallery",
+    element: <ImageComponent />,
   },
   { path: "/images/upload", element: <ImageComponent /> },
 ]);

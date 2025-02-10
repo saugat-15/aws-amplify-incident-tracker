@@ -17,3 +17,9 @@ main {
   flex-direction: column;
   align-items: stretch;
 }
+
+.amplify-button--primary:hover {
+  background-color: #a27b5c;
+  color: #e3fcd6;
+  opacity: 0.9;
+}

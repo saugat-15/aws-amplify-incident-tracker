@@ -8,6 +8,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Schema } from "../../../amplify/data/resource";
 
 const SeverityDistributionChart = ({
   serviceRequests,

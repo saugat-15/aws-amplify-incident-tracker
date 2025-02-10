@@ -3,6 +3,7 @@ import type { Schema } from "../../resource";
 import { Amplify } from "aws-amplify";
 import { env } from "$amplify/env/handler";
 import { executeGraphQL } from "../../utils/graphQlUtils";
+import { validateServiceRequestWithoutId } from "../../../validators/ServiceRequestValidator";
 
 const logger = new Logger({
   serviceName: "serviceRequest",
@@ -82,9 +83,13 @@ export const handler: Schema["createRequest"]["functionHandler"] = async (
 
     logger.info("Creating Service Request", { input });
 
+    const validatedInput = validateServiceRequestWithoutId(input);
+
+    logger.info("Validated Input", { validatedInput });
+
     const createServiceRequestResult = await executeGraphQL<{
       createServiceRequest: ServiceRequest;
-    }>(operations.createServiceRequest, { input });
+    }>(operations.createServiceRequest, { input: validatedInput.data });
 
     return createServiceRequestResult.createServiceRequest;
   } catch (error) {

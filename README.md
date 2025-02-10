@@ -1,16 +1,71 @@
-# README for Amplify Project
+# Service Request Incident Tracker
 
 ## Overview
 
-This project is an AWS Amplify application that integrates user authentication and image processing functionalities using AWS services. The goal was to create a user-friendly platform where users can securely upload and retrieve images.
+This project is an AWS Amplify application that provides a platform for managing service requests and incidents. It integrates user authentication, image management, and service request tracking functionalities using AWS services. The application allows users to create, track, and manage service requests while providing visual analytics and image upload capabilities.
+
+```mermaid
+graph TB
+    subgraph Client
+        UI[React Frontend]
+        Auth[Authentication Component]
+        Forms[Service Request Forms]
+        Gallery[Image Gallery]
+    end
+
+    subgraph "AWS Amplify"
+        Cognito[Amazon Cognito]
+        AppSync[AWS AppSync]
+        APIGateway[API Gateway]
+
+        subgraph "Storage & Database"
+            S3[S3 Bucket]
+            DynamoDB[DynamoDB]
+        end
+
+        subgraph "Serverless Functions"
+            Lambda[Image Processor Lambda]
+            Mutator[GraphQL Mutator Lambda]
+        end
+    end
+
+    %% Client-side connections
+    UI --> Auth
+    UI --> Forms
+    UI --> Gallery
+
+    %% Authentication flow
+    Auth <--> Cognito
+
+    %% Data flow
+    Forms <--> AppSync
+    AppSync <--> Mutator
+    Mutator <--> DynamoDB
+
+    %% Image handling flow
+    Gallery <--> APIGateway
+    APIGateway --> Lambda
+    Lambda <--> S3
+
+    %% Access control
+    Cognito -.-> APIGateway
+    Cognito -.-> AppSync
+
+    %% Styling
+    classDef awsService fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:white
+    classDef clientComponent fill:#3F4F44,stroke:#2C3930,stroke-width:2px,color:white
+
+    class Cognito,AppSync,APIGateway,S3,DynamoDB,Lambda,Mutator awsService
+    class UI,Auth,Forms,Gallery clientComponent
+```
 
 ## Setup Instructions
 
 1. **Clone the Repository**
 
    ```bash
-   git clone <repository-url>
-   cd <repository-directory>
+   git clone https://github.com/saugat-15/aws-amplify-incident-tracker.git
+   cd aws-amplify-incident-tracker
    ```
 
 2. **Install Dependencies**
@@ -24,58 +79,152 @@ This project is an AWS Amplify application that integrates user authentication a
    Create a `.env` file in the root directory and add the following variables:
 
    ```plaintext
-   AWS_BRANCH=<your-branch-name>
-   BUCKET_NAME=<your-s3-bucket-name>
+   VITE_AWS_BRANCH=<your-branch-name> #i have named it sandbox-saugat
    ```
 
-4. **Deploy the Application**
+4. **Run your sandbox**
    Use the Amplify CLI to deploy the application:
 
    ```bash
-   amplify push
+   npx ampx sandbox #remember to configure AWS credentials using amplify configure
    ```
 
 5. **Run the Application**
-   Follow the instructions provided by Amplify to run the application locally or deploy it to a live environment.
+   Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-## Approach
+## Features
+
+### 1. Service Request Management
+
+- Create and track service requests with severity levels (LOW, MEDIUM, HIGH)
+- Automatic resolution date calculation based on severity
+- Comprehensive form validation using Zod
+- Visual analytics showing severity distribution
+
+### 2. Image Management
+
+- Image gallery with preview capabilities and zoom functionality
+- Public read access for uploaded images
+- Authenticated upload restrictions
+- Thumbnail generation for optimized viewing
+- View all images stored in S3 bucket through an intuitive gallery interface
+- Upload new images directly to S3 with drag-and-drop or file selection
+- Image preview before upload
+- Support for common image formats (JPEG, PNG, GIF)
+- Automatic thumbnail generation for faster loading
+
+### User Guide: Image Gallery
+
+#### Viewing Images
+
+- Navigate to the Image Gallery section
+- Browse through all uploaded images in a grid layout
+- Click on any image to view it in full size
+- Use zoom controls to examine image details
+- Images are loaded from S3 with optimized thumbnails for better performance
+
+#### Uploading Images
+
+- Click the "Upload" button in the Image Gallery
+- Drag and drop images or click to select files
+- Preview selected images before upload
+- Click "Submit" to upload to S3
+- Wait for confirmation of successful upload
+- Newly uploaded images will appear immediately in the gallery
+
+### 3. User Authentication
+
+- Email-based authentication using AWS Cognito
+- Automatic user group assignment
+- Protected routes and API endpoints
+
+## Technical Implementation
 
 ### Clean Code Principles
 
-In developing this application, I focused on several clean code principles:
+1. **Modular Architecture**
 
-1. **Modularity**: I organized the code into separate files and functions, each handling a specific responsibility. For example, the image processing logic is encapsulated in its own function, while user management is handled separately.
+   - Separate components for service requests, image handling, and authentication
+   - Clear separation of concerns between frontend and backend logic
+   - Reusable components like form fields and image gallery
+   - Shared validation schemas between client and server using Zod
 
-2. **Descriptive Naming**: I made sure to use descriptive names for functions and variables. For instance, `addUserToGroup` clearly indicates its purpose, making the code easier to read and understand.
+2. **Type Safety**
 
-3. **Error Handling**: I implemented comprehensive error handling using try-catch blocks. This ensures that errors are logged properly and that users receive meaningful feedback when something goes wrong.
+   - TypeScript implementation throughout the application
+   - Zod schema validation for form inputs, shared across client and server
+   - Strong typing for API responses and requests
 
-4. **Environment Variables**: I used environment variables to manage sensitive information and configuration settings. This approach enhances security and allows for easier configuration changes.
+3. **Error Handling**
+   - Comprehensive error handling in Lambda functions
+   - User-friendly error messages in the UI
+   - Logging using AWS Lambda Powertools
 
-5. **Documentation**: I included inline comments and structured the code to help others (and myself) understand the flow and purpose of the code, making future maintenance easier.
+### AWS Services Integration
 
-### Implementation of S3
+1. **Authentication (Cognito)**
 
-1. **Image Storage**: I chose AWS S3 for storing images uploaded by users. The images are stored in a public directory, which allows for easy retrieval.
+   - User pool configuration with email authentication
+   - Automatic group assignment post-confirmation
+   - Protected API endpoints using Cognito authorizers
+   - Implementation of principle of least privilege:
+     - Role-based access control (RBAC)
+     - Granular permissions based on user groups
+     - Minimal required permissions for each user role
 
-2. **Access Control**: I configured the S3 bucket with policies that allow only authenticated users to upload images while enabling public read access for retrieving images. This way, users can view images without compromising security.
+2. **Storage (S3)**
 
-3. **Efficient Data Handling**: I implemented asynchronous handling for image uploads and retrievals to keep the application responsive. Using streams for reading image data from S3 helps minimize memory usage and improves performance.
+   - Secure image storage with public read access
+   - Authenticated upload capabilities with least privilege access
+   - Bucket policies enforcing minimal required permissions
+   - Efficient image retrieval and management
 
-4. **Logging**: I added logging to track operations related to image processing. This provides insights into the application's behavior and helps with debugging.
+3. **API (AppSync & API Gateway)**
+   - GraphQL API for service requests with real-time mutations
+   - REST API for image handling
+   - Protected endpoints with Cognito authentication and fine-grained access control
+   - Optimized data operations using GraphQL mutations:
+     - Atomic updates with built-in conflict resolution
+     - Real-time data synchronization across clients
+     - Reduced network overhead with selective field updates
+     - Type-safe operations with schema validation
 
-## Decisions and Trade-offs
+### Frontend Implementation
 
-- **Choice of AWS Services**: I opted for AWS Amplify due to its seamless integration with AWS services, which simplified the development process. I chose Cognito for user authentication because of its robust security features and ease of use.
+1. **React Components**
 
-- **Public Access vs. Security**: I enabled public read access for the S3 bucket to facilitate image retrieval, but I restricted write access to authenticated users only. This trade-off ensures that while users can view images, only authorized users can upload them.
+   - Responsive design using Tailwind CSS
+   - Material-UI integration for enhanced UI components
+   - Real-time data updates using GraphQL subscriptions
 
-- **Error Handling Strategy**: I implemented a centralized error handling strategy to ensure consistent logging of all errors. This decision enhances maintainability and provides a clear understanding of issues that may arise during execution.
+2. **State Management**
+   - Form state handling with React Hook Form
+   - Client-side caching for performance
+   - Optimistic updates for better user experience
 
-## Live Site
+## Development Workflow
 
-Currently, there is no live site available for interaction. However, once deployed, users will be able to access the application through the provided Amplify URL.
+1. **Local Development**
 
-## Conclusion
+   ```bash
+   npm run dev
+   ```
 
-This project reflects my commitment to clean coding practices and efficient use of AWS services. I aimed to create a secure and user-friendly application that adheres to best practices, ensuring maintainability and scalability for future enhancements.
+2. **Building for Production**
+   ```bash
+   npm run build
+   ```
+
+## Color Palette
+
+The application uses a carefully selected color scheme that combines natural and earthy tones:
+
+| Color Code | Preview                                                           | Usage                      |
+| ---------- | ----------------------------------------------------------------- | -------------------------- |
+| `#e3fcd6`  | ![](https://via.placeholder.com/15/e3fcd6/e3fcd6.png) Light Sage  | Background, success states |
+| `#2C3930`  | ![](https://via.placeholder.com/15/2C3930/2C3930.png) Deep Forest | Primary text, headers      |
+| `#A27B5C`  | ![](https://via.placeholder.com/15/A27B5C/A27B5C.png) Warm Brown  | Accents, buttons           |
+| `#3F4F44`  | ![](https://via.placeholder.com/15/3F4F44/3F4F44.png) Muted Green | Secondary elements         |

@@ -10,6 +10,7 @@ import {
 import { useMemo } from "react";
 import SeverityBadge from "./SeverityBadge";
 import { Schema } from "../../../amplify/data/resource";
+import SearchIcon from "@mui/icons-material/Search";
 
 const ServiceRequestsTable = ({
   data,
@@ -56,14 +57,14 @@ const ServiceRequestsTable = ({
         header: "Resolution Date",
         cell: (info) => (
           <div className="text-[#DCD7C9]">
-            {info.getValue()
-              ? new Date(info.getValue()).toLocaleDateString()
+            {info.getValue() && info.getValue() !== null
+              ? new Date(info.getValue()!).toLocaleDateString()
               : "Pending"}
           </div>
         ),
       }),
     ],
-    []
+    [columnHelper]
   );
 
   const table = useReactTable({
@@ -73,7 +74,7 @@ const ServiceRequestsTable = ({
       sorting,
       globalFilter,
     },
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => setSorting(updater as SortingState),
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -83,6 +84,9 @@ const ServiceRequestsTable = ({
   return (
     <div className="flex flex-col w-full">
       <div className="mb-4 self-end">
+        <SearchIcon
+          sx={{ color: "#2C3930", fontSize: "32px", marginRight: "10px" }}
+        />
         <input
           placeholder="Search all requests..."
           value={globalFilter ?? ""}

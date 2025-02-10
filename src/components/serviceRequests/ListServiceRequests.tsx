@@ -5,6 +5,7 @@ import { generateClient } from "aws-amplify/api";
 import ServiceRequestsTable from "./ServiceRequestTable";
 import SeverityDistributionChart from "./SeverityDistributionChart";
 import SeverityBadge from "./SeverityBadge";
+import { SortingState } from "@tanstack/react-table";
 
 const client = generateClient<Schema>();
 
@@ -21,7 +22,7 @@ const ListServiceRequests: React.FC<ListServiceRequestsProps> = ({
     Schema["ServiceRequest"]["type"][]
   >([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const fetchServiceRequests = async () => {
     const sub = client.models.ServiceRequest.observeQuery().subscribe({

@@ -49,7 +49,7 @@ const UploadImageContainer = ({
       });
 
       const response = post({
-        apiName: "img-api",
+        apiName: `img-api-${import.meta.env.VITE_AWS_BRANCH}`,
         path: "img",
         options: {
           headers: {

@@ -8,6 +8,7 @@ export const createRequestHandler = defineFunction({
 export const createRequest = a
   .mutation()
   .arguments({
+    id: a.string().required(),
     serviceName: a.string().required(),
     description: a.string().required(),
     severity: a.enum(["LOW", "MEDIUM", "HIGH"]),

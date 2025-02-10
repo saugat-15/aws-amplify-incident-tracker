@@ -15,7 +15,7 @@ export const configureApi = (
   envName: string
 ) => {
   const imageApi = new RestApi(apiStack, "RestApi", {
-    restApiName: "img-api",
+    restApiName: `img-api-${envName}`,
     deploy: true,
     deployOptions: {
       stageName: envName,

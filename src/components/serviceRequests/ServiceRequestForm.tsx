@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { Schema } from "../../../amplify/data/resource";
 import { generateClient } from "aws-amplify/api";
-import { validateServiceRequestWithoutId } from "../../../amplify/validators/ServiceRequestValidator";
+import { validateServiceRequest } from "../../../amplify/validators/ServiceRequestValidator";
 import { Snackbar, CircularProgress, Alert } from "@mui/material"; // MUI imports
 import ListServiceRequests from "./ListServiceRequests";
 import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 const client = generateClient<Schema>();
 type Severity = Schema["ServiceRequest"]["type"]["severity"];
 
@@ -57,15 +58,28 @@ const ServiceRequestForm = () => {
     setSuccess(false); // Reset success state before submitting
     try {
       console.log("Submitting request:", formData);
-      const validatedData = validateServiceRequestWithoutId({
+      const validatedData = validateServiceRequest({
+        id: uuidv4(),
         ...formData,
         resolutionDate: new Date(formData.resolutionDate).toISOString(),
       });
       console.log("Validated data:", validatedData);
 
+      if (!validatedData.data) {
+        throw new Error("Invalid form data");
+      }
       const response = await client.mutations.createRequest(validatedData.data);
       console.log("Request submitted successfully:", response);
       setSuccess(true); // Set success state after successful submission
+      setFormData({
+        serviceName: "",
+        severity: "LOW" as Severity,
+        description: "",
+        reporterName: "",
+        contactEmail: "",
+        location: "",
+        resolutionDate: getResolutionDate("LOW"),
+      });
     } catch (error) {
       console.error("Error submitting request:", error);
       setError("An error occurred while submitting the request.");
@@ -130,7 +144,7 @@ const ServiceRequestForm = () => {
                 <SelectField
                   label="Severity*"
                   name="severity"
-                  value={formData.severity}
+                  value={formData.severity || ""}
                   onChange={handleChange}
                   options={["LOW", "MEDIUM", "HIGH"]}
                   disabled={loading}
@@ -185,16 +199,14 @@ const ServiceRequestForm = () => {
               <h3 className="text-lg font-semibold mb-4 text-[#DCD7C9]">
                 Timeline
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField
-                  label="Resolution Date"
-                  name="resolutionDate"
-                  type="datetime-local"
-                  value={formData.resolutionDate}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-              </div>
+              <InputField
+                label="Resolution Date"
+                name="resolutionDate"
+                type="datetime-local"
+                value={formData.resolutionDate}
+                onChange={handleChange}
+                disabled={loading}
+              />
             </div>
 
             <div className="md:col-span-2">
@@ -218,6 +230,7 @@ const ServiceRequestForm = () => {
           }}
         >
           <Alert
+            variant="filled"
             onClose={() => {
               setError(null);
               setSuccess(false);
