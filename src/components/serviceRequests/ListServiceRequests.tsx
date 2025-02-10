@@ -1,61 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Schema } from "../../../amplify/data/resource";
+import { useNavigate } from "react-router-dom";
+import { generateClient } from "aws-amplify/api";
 
-// Mock service requests
-const mockServiceRequests = [
-  {
-    id: "1",
-    serviceName: "Plumbing Issue",
-    description: "Leaky faucet in the kitchen.",
-    severity: "HIGH" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "John Doe",
-    contactEmail: "john.doe@example.com",
-    location: "Kitchen",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    serviceName: "Electrical Issue",
-    description: "Flickering lights in the living room.",
-    severity: "MEDIUM" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Jane Smith",
-    contactEmail: "jane.smith@example.com",
-    location: "Living Room",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    serviceName: "HVAC Issue",
-    description: "Air conditioning not working in the bedroom.",
-    severity: "LOW" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Bob Johnson",
-    contactEmail: "bob.johnson@example.com",
-    location: "Bedroom",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    serviceName: "Pest Control Issue",
-    description: "Cockroaches in the kitchen.",
-    severity: "HIGH" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Alice Brown",
-    contactEmail: "alice.brown@example.com",
-    location: "Kitchen",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const client = generateClient<Schema>();
 
 const SeverityBadge: React.FC<{ severity: "HIGH" | "MEDIUM" | "LOW" }> = ({
   severity,
@@ -104,9 +52,6 @@ const ServiceRequestDetails = ({
         <h4 className="text-sm font-medium text-[#A27B5C]">Timeline</h4>
         <p className="text-[#DCD7C9]">
           Resolution Date: {formatDate(request?.resolutionDate || "")}
-        </p>
-        <p className="text-[#DCD7C9]">
-          Submitted: {formatDate(request?.timestamp?.toString() || "")}
         </p>
       </div>
     </div>
@@ -167,7 +112,11 @@ const ServiceRequestList = ({
         </h2>
         <div className="grid gap-6">
           {serviceRequests.map((request) => (
-            <ServiceRequestItem request={request} formatDate={formatDate} />
+            <ServiceRequestItem
+              request={request}
+              formatDate={formatDate}
+              key={request.id}
+            />
           ))}
         </div>
       </div>
@@ -176,7 +125,35 @@ const ServiceRequestList = ({
 };
 
 const ListServiceRequests = () => {
-  return <ServiceRequestList serviceRequests={mockServiceRequests} />;
+  const navigate = useNavigate();
+  const [serviceRequests, setServiceRequests] = useState<
+    Schema["ServiceRequest"]["type"][]
+  >([]);
+
+  const fetchServiceRequests = async () => {
+    const sub = client.models.ServiceRequest.observeQuery().subscribe({
+      next: ({ items, isSynced }) => {
+        setServiceRequests([...items]);
+      },
+    });
+    return () => sub.unsubscribe();
+  };
+
+  useEffect(() => {
+    fetchServiceRequests();
+  }, []);
+
+  return (
+    <>
+      <ServiceRequestList serviceRequests={serviceRequests} />
+      <button
+        className="fixed bottom-4 w-auto right-4 bg-[#A27B5C] text-white rounded-full p-4 shadow-lg hover:opacity-90 transition-opacity"
+        onClick={() => navigate("/create")}
+      >
+        Service Request +
+      </button>
+    </>
+  );
 };
 
 export default ListServiceRequests;
