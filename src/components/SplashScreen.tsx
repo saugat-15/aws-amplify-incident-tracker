@@ -1,38 +1,64 @@
-import { useState, useEffect } from "react";
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
+import CircularProgress from "@mui/material/CircularProgress";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+
+// Simplified CircularProgressWithLabel component
+function CircularProgressWithLabel({ value }: { value: number }) {
+  return (
+    <Box sx={{ position: "relative", display: "inline-flex" }}>
+      <CircularProgress
+        variant="determinate"
+        value={value}
+        sx={{ color: "#A27B5C" }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography variant="caption" sx={{ color: "#e3fcd6" }}>
+          {`${Math.round(value)}%`}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 const SplashScreen = () => {
-  const [progress, setProgress] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [progress, setProgress] = React.useState(0);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    // Progress bar animation
+  React.useEffect(() => {
+    const startTime = Date.now();
+    const duration = 2000; // Reduced to 2 seconds
+    const interval = 16;
+
     const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          return 100;
-        }
-        return prev + 3.333; // Increase by ~3.33% every 100ms to complete in 3 seconds
-      });
-    }, 100);
+      const progress = Math.min((Date.now() - startTime) / duration, 1);
+      setProgress(progress * 100);
 
-    // Hide splash screen after 3 seconds
-    const timer = setTimeout(() => {
-      setVisible(false);
-    }, 3000);
+      if (progress >= 1) {
+        clearInterval(progressInterval);
+        setTimeout(() => navigate("/dashboard"), 300);
+      }
+    }, interval);
 
-    return () => {
-      clearInterval(progressInterval);
-      clearTimeout(timer);
-    };
-  }, []);
-
-  if (!visible) return null;
+    return () => clearInterval(progressInterval);
+  }, [navigate]);
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#2C3930] z-50">
-      {/* Logo or company name */}
-      <div className="mb-8">
+      <div
+        className={`mb-8 ${
+          progress > 20 ? "opacity-100" : "opacity-0"
+        } transition-opacity duration-500`}
+      >
         <h1 className="text-4xl font-bold text-[#e3fcd6]">
           Service Request Incident Tracker
         </h1>
@@ -41,13 +67,9 @@ const SplashScreen = () => {
         </h3>
       </div>
 
-      {/* Progress bar container */}
-      <div className="w-64 h-2 bg-[#3F4F44] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[#A27B5C] transition-all duration-100 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <CircularProgressWithLabel value={progress} />
+
+      <p className="mt-4 text-[#e3fcd6] text-sm opacity-60">Loading...</p>
     </div>
   );
 };
