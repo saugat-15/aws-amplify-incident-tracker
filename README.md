@@ -2,7 +2,9 @@
 
 ## Overview
 
-This project is an AWS Amplify application that provides a platform for managing service requests and incidents. It integrates user authentication, image management, and service request tracking functionalities using AWS services. The application allows users to create, track, and manage service requests while providing visual analytics and image upload capabilities.
+This project is an AWS Amplify application that provides a platform for managing service requests and incidents. It integrates user authentication, image management, and service request tracking functionalities using AWS services. The application allows users to create, and track service requests while providing visual analytics and image upload capabilities.
+
+Live Site URL: https://main.du3glzvo2cto3.amplifyapp.com/
 
 ```mermaid
 graph TB
@@ -83,7 +85,7 @@ graph TB
    ```
 
 4. **Run your sandbox**
-   Use the Amplify CLI to deploy the application:
+   Use the Amplify CLI to deploy the sandbox:
 
    ```bash
    npx ampx sandbox #remember to configure AWS credentials using amplify configure
@@ -152,16 +154,24 @@ graph TB
    - Reusable components like form fields and image gallery
    - Shared validation schemas between client and server using Zod
 
-2. **Type Safety**
+2. **Container-Presentational Architecture pattern**
+
+   - In line with container-presentational architecture, i’ve kept the business logic and rendering of data separate.
+   - Container components are responsible for fetching data and managing state (business logic).
+   - Presentational components focus purely on displaying data. They are passed the data as props and handle rendering the UI elements.
+   - Testability: It’s easier to write tests for both the business logic (in container components) and the UI (in presentational components).
+
+
+3. **Type Safety**
 
    - TypeScript implementation throughout the application
    - Zod schema validation for form inputs, shared across client and server
    - Strong typing for API responses and requests
 
-3. **Error Handling**
+4. **Error Handling**
    - Comprehensive error handling in Lambda functions
    - User-friendly error messages in the UI
-   - Logging using AWS Lambda Powertools
+   - Logging using AWS Lambda Powertools #logs can be viewed in AWS Cloudwatch for debugging and monitoring purposes and also set alarms for error metrics when required
 
 ### AWS Services Integration
 
@@ -172,14 +182,14 @@ graph TB
    - Protected API endpoints using Cognito authorizers
    - Implementation of principle of least privilege:
      - Role-based access control (RBAC)
-     - Granular permissions based on user groups
+     - Granular permissions based on user groups and specific lambda functions
      - Minimal required permissions for each user role
 
 2. **Storage (S3)**
 
    - Secure image storage with public read access
    - Authenticated upload capabilities with least privilege access
-   - Bucket policies enforcing minimal required permissions
+   - Bucket policies enforcing minimal required permissions to only allow nominated lambda function to write to the bucket
    - Efficient image retrieval and management
 
 3. **API (AppSync & API Gateway)**
@@ -201,9 +211,8 @@ graph TB
    - Real-time data updates using GraphQL subscriptions
 
 2. **State Management**
-   - Form state handling with React Hook Form
-   - Client-side caching for performance
-   - Optimistic updates for better user experience
+   - Form state handling with React Hooks
+   - Efficient use of hooks as container-presentational architecture does the most of heavy lifting.
 
 ## Development Workflow
 
