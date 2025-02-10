@@ -26,7 +26,11 @@ enum ACTION {
   LIST = "LIST",
 }
 
-// Lambda function handler
+/**
+ * Main Lambda function handler that processes image-related requests
+ * @param event - API Gateway proxy event
+ * @returns API Gateway proxy response
+ */
 export const handler: APIGatewayProxyHandler = async (event) => {
   logger.info("Received request", { event });
   const data =
@@ -58,7 +62,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-// Helper function to parse event body
+/**
+ * Parses and validates the event body, ensuring it doesn't exceed size limits
+ * @param body - Raw request body string
+ * @returns Parsed JSON object or null if invalid
+ */
 const parseEventBody = (body: string | null) => {
   const MAX_PAYLOAD_SIZE = 1048576; // 1 MB limit
   if (body && Buffer.byteLength(body, "utf8") > MAX_PAYLOAD_SIZE) {
@@ -75,14 +83,24 @@ const parseEventBody = (body: string | null) => {
   }
 };
 
-// Function to send response
+/**
+ * Creates a standardized API response
+ * @param statusCode - HTTP status code
+ * @param message - Response message
+ * @param data - Optional response data
+ * @returns Formatted API Gateway response
+ */
 const response = (statusCode: number, message: string, data: any = null) => ({
   statusCode,
   headers,
   body: JSON.stringify({ message, data }),
 });
 
-// Handle image upload
+/**
+ * Handles image upload requests
+ * @param data - Object containing action, fileName, and base64 imageData
+ * @returns API response with upload status
+ */
 const handleUpload = async (data: {
   action: string;
   fileName: string;
@@ -96,13 +114,20 @@ const handleUpload = async (data: {
   return response(200, "Image uploaded successfully");
 };
 
-// Handle listing images
+/**
+ * Handles requests to list all images
+ * @returns API response with list of image URLs
+ */
 const handleList = async () => {
   const data = await listS3Files();
   return response(200, "Images listed successfully", data);
 };
 
-// List files in S3
+/**
+ * Lists all files in the S3 bucket with 'public/' prefix
+ * @returns Array of public URLs for the images
+ * @throws Error if S3 listing operation fails
+ */
 const listS3Files = async () => {
   const bucketName = process.env.BUCKET_NAME!;
   try {
@@ -132,7 +157,12 @@ const listS3Files = async () => {
   }
 };
 
-// Function to upload a file to S3
+/**
+ * Uploads a base64 encoded image to S3
+ * @param fileName - Name of the file to be saved
+ * @param imageData - Base64 encoded image data
+ * @throws Error if S3 upload operation fails
+ */
 const writeToS3 = async (fileName: string, imageData: string) => {
   const bucketName = process.env.BUCKET_NAME;
   const key = `public/${fileName}`;
