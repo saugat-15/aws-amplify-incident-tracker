@@ -6,7 +6,7 @@ import "@aws-amplify/ui-react/styles.css";
 
 import { Amplify } from "aws-amplify";
 import outputs from "../amplify_outputs.json";
-import { Authenticator } from "@aws-amplify/ui-react";
+import { Authenticator, ThemeProvider } from "@aws-amplify/ui-react";
 import { parseAmplifyConfig } from "aws-amplify/utils";
 import Header from "./components/Header.tsx";
 import { signOut } from "aws-amplify/auth";
@@ -42,11 +42,27 @@ const formFields = {
   },
 };
 
+const theme = {
+  name: "custom-theme",
+  tokens: {
+    components: {
+      button: {
+        primary: {
+          backgroundColor: "#A27B5C",
+          color: "#e3fcd6",
+        },
+      },
+    },
+  },
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Authenticator formFields={formFields}>
-      <Header title="Service Request Incident Tracker" onSignOut={signOut} />
-      <App />
-    </Authenticator>
+    <ThemeProvider theme={theme}>
+      <Authenticator formFields={formFields}>
+        <Header title="Service Request Incident Tracker" onSignOut={signOut} />
+        <App />
+      </Authenticator>
+    </ThemeProvider>
   </React.StrictMode>
 );

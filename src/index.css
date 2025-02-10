@@ -9,11 +9,17 @@ body {
   /* height: 100vh; */
   width: 100vw;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
 }
 
 main {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+
+.amplify-button--primary:hover {
+  background-color: #a27b5c;
+  color: #e3fcd6;
+  opacity: 0.9;
 }

@@ -7,18 +7,23 @@ import SplashScreen from "./components/SplashScreen";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <ListServiceRequests />,
+    element: <SplashScreen />,
+  },
+  {
+    path: "/dashboard",
+    element: <ListServiceRequests displayChart={true} />,
   },
   {
     path: "/create",
     element: <ServiceRequestForm />,
   },
+  { path: "/images/upload", element: <ImageComponent /> },
   {
-    path: "/splash",
-    element: <SplashScreen />,
+    path: "/gallery",
+    element: <ImageComponent />,
   },
 ]);
 
-export default function TodoList() {
+export default function App() {
   return <RouterProvider router={router} />;
 }
