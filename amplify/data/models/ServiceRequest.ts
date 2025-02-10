@@ -9,5 +9,4 @@ export const ServiceRequest = a.model({
   reporterName: a.string(),
   contactEmail: a.email(),
   location: a.string(),
-  timestamp: a.timestamp(),
 });

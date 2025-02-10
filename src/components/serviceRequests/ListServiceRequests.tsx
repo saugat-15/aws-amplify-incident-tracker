@@ -1,78 +1,126 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Schema } from "../../../amplify/data/resource";
+import { useNavigate } from "react-router-dom";
+import { generateClient } from "aws-amplify/api";
+import ServiceRequestsTable from "./ServiceRequestTable";
+import SeverityDistributionChart from "./SeverityDistributionChart";
+import SeverityBadge from "./SeverityBadge";
 
-// Mock service requests
-const mockServiceRequests = [
-  {
-    id: "1",
-    serviceName: "Plumbing Issue",
-    description: "Leaky faucet in the kitchen.",
-    severity: "HIGH" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "John Doe",
-    contactEmail: "john.doe@example.com",
-    location: "Kitchen",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    serviceName: "Electrical Issue",
-    description: "Flickering lights in the living room.",
-    severity: "MEDIUM" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Jane Smith",
-    contactEmail: "jane.smith@example.com",
-    location: "Living Room",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    serviceName: "HVAC Issue",
-    description: "Air conditioning not working in the bedroom.",
-    severity: "LOW" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Bob Johnson",
-    contactEmail: "bob.johnson@example.com",
-    location: "Bedroom",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    serviceName: "Pest Control Issue",
-    description: "Cockroaches in the kitchen.",
-    severity: "HIGH" as Schema["ServiceRequest"]["type"]["severity"],
-    resolutionDate: new Date().toISOString(),
-    reporterName: "Alice Brown",
-    contactEmail: "alice.brown@example.com",
-    location: "Kitchen",
-    timestamp: new Date().getTime(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const client = generateClient<Schema>();
 
-const SeverityBadge: React.FC<{ severity: "HIGH" | "MEDIUM" | "LOW" }> = ({
-  severity,
+interface ListServiceRequestsProps {
+  displayChart?: boolean;
+}
+
+const ListServiceRequests: React.FC<ListServiceRequestsProps> = ({
+  displayChart,
 }) => {
-  const baseClasses = "px-2 py-1 rounded-full text-xs font-semibold";
-  const severityClasses = {
-    HIGH: "bg-red-100 text-red-800",
-    MEDIUM: "bg-yellow-100 text-yellow-800",
-    LOW: "bg-green-100 text-green-800",
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+  const [serviceRequests, setServiceRequests] = useState<
+    Schema["ServiceRequest"]["type"][]
+  >([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState([]);
+
+  const fetchServiceRequests = async () => {
+    const sub = client.models.ServiceRequest.observeQuery().subscribe({
+      next: ({ items }) => {
+        setServiceRequests([...items]);
+      },
+    });
+    return () => sub.unsubscribe();
   };
 
+  const checkIfMobile = () => {
+    setIsMobile(window.innerWidth <= 768);
+  };
+
+  useEffect(() => {
+    fetchServiceRequests();
+    checkIfMobile();
+  }, []);
+
   return (
-    <span className={`${baseClasses} ${severityClasses[severity]}`}>
-      {severity}
-    </span>
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-2xl font-bold text-[#2C3930] mb-8">
+          Service Requests
+        </h2>
+
+        {displayChart && (
+          <SeverityDistributionChart serviceRequests={serviceRequests} />
+        )}
+        {!isMobile && (
+          <ServiceRequestsTable
+            data={serviceRequests}
+            globalFilter={globalFilter}
+            setGlobalFilter={setGlobalFilter}
+            sorting={sorting}
+            setSorting={setSorting}
+          />
+        )}
+
+        {isMobile && (
+          <div className="space-y-4">
+            {serviceRequests.map((request) => (
+              <ServiceRequestItem
+                key={request.id}
+                request={request}
+                formatDate={(dateString) =>
+                  new Date(dateString).toLocaleDateString()
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        {
+          <button
+            className="fixed cursor-pointer bottom-4 right-4 bg-[#A27B5C] text-white rounded-full p-4 shadow-lg hover:opacity-90 transition-opacity"
+            onClick={() => {
+              if (!window.location.pathname.includes("create")) {
+                navigate("/create");
+              } else {
+                window.scrollTo(0, 0);
+              }
+            }}
+          >
+            Service Request +
+          </button>
+        }
+      </div>
+    </div>
   );
 };
+
+export default ListServiceRequests;
+
+const ServiceRequestItem = ({
+  request,
+  formatDate,
+}: {
+  request: Schema["ServiceRequest"]["type"];
+  formatDate: (dateString: string) => string;
+}) => (
+  <div
+    key={request.id}
+    className="bg-[#3F4F44] rounded-lg shadow-lg overflow-hidden mb-4 md:mb-6"
+  >
+    <div className="p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-[#DCD7C9] mb-2 sm:mb-0">
+          id: {request.id}
+        </h4>
+        <h3 className="text-xl font-semibold text-[#DCD7C9] mb-2 sm:mb-0">
+          {request.serviceName}
+        </h3>
+        <SeverityBadge severity={request.severity || "LOW"} />
+      </div>
+      <ServiceRequestDetails request={request} formatDate={formatDate} />
+    </div>
+  </div>
+);
 
 const ServiceRequestDetails = ({
   request,
@@ -105,78 +153,7 @@ const ServiceRequestDetails = ({
         <p className="text-[#DCD7C9]">
           Resolution Date: {formatDate(request?.resolutionDate || "")}
         </p>
-        <p className="text-[#DCD7C9]">
-          Submitted: {formatDate(request?.timestamp?.toString() || "")}
-        </p>
       </div>
     </div>
   </div>
 );
-
-const ServiceRequestItem = ({
-  request,
-  formatDate,
-}: {
-  request: Schema["ServiceRequest"]["type"];
-  formatDate: (dateString: string) => string;
-}) => (
-  <div
-    key={request.id}
-    className="bg-[#3F4F44] rounded-lg shadow-lg overflow-hidden"
-  >
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-semibold text-[#DCD7C9]">
-          {request.serviceName}
-        </h3>
-        <SeverityBadge severity={request.severity || "LOW"} />
-      </div>
-      <ServiceRequestDetails request={request} formatDate={formatDate} />
-    </div>
-    <div className="px-6 py-4 bg-[#2C3930] flex justify-end space-x-4">
-      <button className="px-4 py-2 rounded-full bg-[#A27B5C] text-[#DCD7C9] hover:opacity-90 transition-opacity cursor-pointer">
-        Update Status
-      </button>
-      <button className="px-4 py-2 rounded-full border border-[#A27B5C] text-[#DCD7C9] hover:bg-[#A27B5C] transition-colors cursor-pointer">
-        View Details
-      </button>
-    </div>
-  </div>
-);
-
-const ServiceRequestList = ({
-  serviceRequests,
-}: {
-  serviceRequests: Schema["ServiceRequest"]["type"][];
-}) => {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-[#DCD7C9] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold text-[#2C3930] mb-8">
-          Service Requests
-        </h2>
-        <div className="grid gap-6">
-          {serviceRequests.map((request) => (
-            <ServiceRequestItem request={request} formatDate={formatDate} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ListServiceRequests = () => {
-  return <ServiceRequestList serviceRequests={mockServiceRequests} />;
-};
-
-export default ListServiceRequests;

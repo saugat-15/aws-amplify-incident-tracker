@@ -1,6 +1,7 @@
 import { a, defineData, type ClientSchema } from "@aws-amplify/backend";
 import { models } from "./models";
 import * as mutations from "./mutations";
+import { createRequestHandler } from "./mutations/serviceRequest/resource";
 // import { defineFunction } from "@aws-amplify/backend";
 // import { createRequest } from "./mutations";
 
@@ -10,7 +11,10 @@ const schema = a
     ...models,
     ...mutations,
   })
-  .authorization((allow) => allow.groups(["USERS"]));
+  .authorization((allow) => [
+    allow.groups(["USERS"]),
+    allow.resource(createRequestHandler),
+  ]);
 
 // export the schema type to be used in the client
 export type Schema = ClientSchema<typeof schema>;
